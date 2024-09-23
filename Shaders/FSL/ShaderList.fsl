@@ -1,0 +1,3 @@
+#comp noise.comp
+#include "noise.comp.fsl"
+#end
