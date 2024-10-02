@@ -55,7 +55,7 @@ STATIC INLINE float32v _OpenSimplex2Gen3D( int32v seed, float32v x, float32v y, 
     float32v zr = f - z;
 
     float32v val = 0;
-    for( size_t i = 0; ; i++ )
+    for( int i = 0; ; i++ )
     {
         float32v v0xr = FS_Round_f32( xr );
         float32v v0yr = FS_Round_f32( yr );
@@ -112,8 +112,11 @@ STATIC INLINE float32v _OpenSimplex2Gen3D( int32v seed, float32v x, float32v y, 
     return float32v( OPEN_SIMPLEX_2_3D_FACTOR ) * val;
 }
 
-#define _FnSimplex2D(x, y) _OpenSimplex2Gen2D(SEED, x, y)
-#define _FnSimplex3D(x, y, z) _OpenSimplex2Gen3D(SEED, x, y, z)
-#define OpenSimplex2(...) _GET_OVERRIDE(__VA_ARGS__, NF, NF, NF, NF, _FnSimplex3D, _FnSimplex2D)(__VA_ARGS__)
+// For completeness define 4D version as 0.f => Not Implemented
+STATIC INLINE float32v _OpenSimplex2Gen4D( int32v seed, float32v x, float32v y, float32v z, float32v w ) {
+    return 0.f;
+}
+
+#define OpenSimplex2Noise(...) _GET_OVERRIDE(__VA_ARGS__, NF, NF, _OpenSimplex2Gen4D, _OpenSimplex2Gen3D, _OpenSimplex2Gen2D)(__VA_ARGS__)
 
 #endif //SIMPLEX_H

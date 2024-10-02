@@ -102,9 +102,6 @@ STATIC INLINE float32v _PerlinGen4D( int32v seed, float32v x, float32v y, float3
         FnUtils_Lerp( FnUtils_GetGradientDot( FnUtils_HashPrimes( seed, x0, y1, z1, w1 ), xf0, yf1, zf1, wf1 ), FnUtils_GetGradientDot( FnUtils_HashPrimes( seed, x1, y1, z1, w1 ), xf1, yf1, zf1, wf1 ), xs ), ys ), zs ), ws );
 }
 
-#define _FnPerlin2D(x, y) _PerlinGen2D(SEED, x, y)
-#define _FnPerlin3D(x, y, z) _PerlinGen3D(SEED, x, y, z)
-#define _FnPerlin4D(x, y, z, w) _PerlinGen4D(SEED, x, y, z, w)
-#define Perlin(...) _GET_OVERRIDE(__VA_ARGS__, NF, NF, NF, _FnPerlin4D, _FnPerlin3D, _FnPerlin2D)(__VA_ARGS__)
+#define PerlinNoise(...) _GET_OVERRIDE(__VA_ARGS__, NF, NF, _PerlinGen4D, _PerlinGen3D, _PerlinGen2D)(__VA_ARGS__)
 
 #endif //PERLIN_H

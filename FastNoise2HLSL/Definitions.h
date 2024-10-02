@@ -26,24 +26,30 @@ MY_MACRO(a, b, c, d	) // Expends to MY_MACRO4(a, b, c, d)
 #define FnPrimes_Z 1720413743
 #define FnPrimes_W 1066037191
 
+#define INT_MAX 2147483647
+#define INT_MIN -2147483648
+#define UINT_MAX 4294967295
+
 #define float32v float
 #define int32v int
-#define size_t int
 #define mask32v bool
 
-#define FS_Convertf32_i32 int
-#define FS_Converti32_f32 float
+#define FS_Convertf32_i32(X) int(X)
+#define FS_Converti32_f32(X) float(X)
 
-#define FS_MaskedAdd_f32(a, b, m) ((m) ? ((a) + (b)) : (a))
-#define FS_MaskedAdd_i32(a, b, m) FS_MaskedAdd_f32(a, b, m)
-#define FS_NMaskedAdd_i32(a, b, m) ((m) ? (a) : ((a) + (b)))
-#define FS_MaskedSub_f32(a, b, m) ((m) ? ((a) - (b)) : (a))
-#define FS_NMaskedSub_f32(a, b, m) ((m) ? (a) : ((a) - (b)))
-#define FS_FMulAdd_f32(a, b, c) (((a) * (b)) + (c))
-#define FS_FNMulAdd_f32(a, b, c) (-((a) * (b)) + (c))
-#define FS_Max_f32(a, b) ((a) > (b) ? (a) : (b))
-#define FS_BitwiseAndNot_m32(a, b) ((a) && !(b))
+#define FS_MaskedAdd_f32(a, b, m)     ( (m) ? ( (a) + (b) ) : (a) )
+#define FS_MaskedAdd_i32(a, b, m)     FS_MaskedAdd_f32(a, b, m)
+#define FS_NMaskedAdd_i32(a, b, m)    ( (m) ? (a) : ( (a) + (b) ) )
+#define FS_MaskedSub_f32(a, b, m)     ( (m) ? ( (a) - (b) ) : (a) )
+#define FS_NMaskedSub_f32(a, b, m)    ( (m) ? (a) : ( (a) - (b) ) )
+#define FS_Select_f32(m, a, b)        ( (m) ? (a) : (b) )
+#define FS_FMulAdd_f32(a, b, c)       ( ( (a) * (b) ) + (c) )
+#define FS_FNMulAdd_f32(a, b, c)      ( -( (a) * (b) ) + (c) )
+#define FS_Max_f32(a, b)              ( (a) > (b) ? (a) : (b) )
+#define FS_BitwiseAndNot_m32(a, b)    ( (a) && !(b) )
 
-#define _mm512_permutex2var_ps(a, idx, b) ((idx & 0x80000000) != 0 ? b : a)
+#define _mm512_permutex2var_ps(a, idx, b) ( ((idx & 0x80000000) != 0) ? (b) : (a) )
+
+#include "./NodeTreeDefinition.h"
 
 #endif //FASTNOISEHLSLHELPERS_H

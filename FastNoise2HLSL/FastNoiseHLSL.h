@@ -1,7 +1,7 @@
 // MIT License
 //
-// Copyright(c) 2023 Jordan Peck (jordan.me2@gmail.com)
-// Copyright(c) 2023 Contributors
+// Copyright(c) 2024 Jordan Peck (jordan.me2@gmail.com)
+// Copyright(c) 2024 Contributors
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -50,18 +50,19 @@
 #ifndef FASTNOISEHLSL_H
 #define FASTNOISEHLSL_H
 
-// Options for the noise generator (can be set in parent function)
-#ifndef SEED
-#define SEED 1337
-#endif
-
-
 /* Usage
 All the macros will expand the right function to use
+int seed = 1337;
 float freq = 0.004f;
-float noise2d = Perlin(x * freq, y * freq);
-float noise3d = Perlin(x * freq, y * freq, z * freq);
-float noise4d = Perlin(x * freq, y * freq, z * freq, w * freq);
+float noise2d = PerlinNoise(seed, x * freq, y * freq);
+float noise3d = PerlinNoise(seed, x * freq, y * freq, z * freq);
+float noise4d = PerlinNoise(seed, x * freq, y * freq, z * freq, w * freq);
+*/
+
+/* Diffing GPU vs SIMD using FS_Abs_f32(hlsl[idx] - simd[idx]) > 0.000001f
+Noises 2D on a grid 8192 * 8192 (67 108 864)
+- Perlin 0.0217% (14 537)
+- Value
 */
 
 // The Forge use a customized version of HLSL to be able to deploy on any platform
@@ -72,6 +73,31 @@ float noise4d = Perlin(x * freq, y * freq, z * freq, w * freq);
 #define INLINE inline
 #endif
 
-#include "./Generators/Perlin.h"
-#include "./Generators/Simplex.h"
+#ifdef __cplusplus
+template<typename T>
+static inline float asfloatCpp(T x) {
+  auto y = &x;
+  return *((float*)y);
+}
+#define asfloat(X) asfloatCpp(X)
+template<typename T>
+static inline unsigned int asuintCpp(T x) {
+  auto y = &x;
+  return *((unsigned int*)y);
+}
+#define asuint(X) asuintCpp(X)
+template<typename T>
+static inline unsigned int asintCpp(T x) {
+  auto y = &x;
+  return *((int*)y);
+}
+#define asint(X) asintCpp(X)
+#define REF(TYPE, VAR) TYPE & VAR
+#else
+#define REF(TYPE, VAR) inout TYPE VAR
+#define asint(X) int(asuint(X))
+#endif
+
+#include "./NodeTreeProcessing.h"
+
 #endif //FASTNOISEHLSL_H

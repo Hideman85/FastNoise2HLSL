@@ -9,9 +9,13 @@ STATIC INLINE float FS_Round_f32(float f) { return (f >= 0) ? int(f + 0.5f) : in
 
 STATIC INLINE float FS_Abs_f32(float f) { return f < 0 ? -f : f; }
 
+STATIC INLINE float FS_InvSqrt_f32(float f) { return 1.f / sqrt(f); }
+
 STATIC INLINE float FnUtils_Lerp(float a, float b, float t) { return a + t * (b - a); }
 
 STATIC INLINE float FnUtils_InterpQuintic(float t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+
+STATIC INLINE float FnUtils_InterpHermite(float t) { return t * t * (3 - 2 * t); }
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -24,7 +28,7 @@ STATIC INLINE int HashPrimes2D(int seed, int xPrimed, int yPrimed)
     int hash = seed ^ xPrimed ^ yPrimed;
 
     hash *= 0x27d4eb2d;
-    return (hash >> 15) ^ hash; // Updated from FastNoise2
+    return (hash >> 15) ^ hash;
 }
 
 STATIC INLINE int HashPrimes3D(int seed, int xPrimed, int yPrimed, int zPrimed)
@@ -32,7 +36,7 @@ STATIC INLINE int HashPrimes3D(int seed, int xPrimed, int yPrimed, int zPrimed)
     int hash = seed ^ xPrimed ^ yPrimed ^ zPrimed;
 
     hash *= 0x27d4eb2d;
-    return (hash >> 15) ^ hash; // Updated from FastNoise2
+    return (hash >> 15) ^ hash;
 }
 
 STATIC INLINE int HashPrimes4D(int seed, int xPrimed, int yPrimed, int zPrimed, int wPrimed)
@@ -40,13 +44,49 @@ STATIC INLINE int HashPrimes4D(int seed, int xPrimed, int yPrimed, int zPrimed, 
     int hash = seed ^ xPrimed ^ yPrimed ^ zPrimed ^ wPrimed;
 
     hash *= 0x27d4eb2d;
-    return (hash >> 15) ^ hash; // Updated from FastNoise2
+    return (hash >> 15) ^ hash;
 }
 
 #define FnUtils_HashPrimes2(h, x, y) HashPrimes2D(h, x, y)
 #define FnUtils_HashPrimes3(h, x, y, z) HashPrimes3D(h, x, y, z)
 #define FnUtils_HashPrimes4(h, x, y, z, w) HashPrimes4D(h, x, y, z, w)
 #define FnUtils_HashPrimes(...) _GET_OVERRIDE(__VA_ARGS__, NF, NF, FnUtils_HashPrimes4, FnUtils_HashPrimes3, FnUtils_HashPrimes2, NF, NF)(__VA_ARGS__)
+
+
+
+///////////////////////////////////////////////////////////////////////
+///    FnUtils::HashPrimesHB
+///////////////////////////////////////////////////////////////////////
+
+// For value noises
+STATIC INLINE int HashPrimesHB2D(int seed, int xPrimed, int yPrimed)
+{
+    int hash = seed ^ xPrimed ^ yPrimed;
+
+    hash *= 0x27d4eb2d;
+    return hash;
+}
+
+STATIC INLINE int HashPrimesHB3D(int seed, int xPrimed, int yPrimed, int zPrimed)
+{
+    int hash = seed ^ xPrimed ^ yPrimed ^ zPrimed;
+
+    hash *= 0x27d4eb2d;
+    return hash;
+}
+
+STATIC INLINE int HashPrimesHB4D(int seed, int xPrimed, int yPrimed, int zPrimed, int wPrimed)
+{
+    int hash = seed ^ xPrimed ^ yPrimed ^ zPrimed ^ wPrimed;
+
+    hash *= 0x27d4eb2d;
+    return hash;
+}
+
+#define FnUtils_HashPrimesHB2(h, x, y) HashPrimesHB2D(h, x, y)
+#define FnUtils_HashPrimesHB3(h, x, y, z) HashPrimesHB3D(h, x, y, z)
+#define FnUtils_HashPrimesHB4(h, x, y, z, w) HashPrimesHB4D(h, x, y, z, w)
+#define FnUtils_HashPrimesHB(...) _GET_OVERRIDE(__VA_ARGS__, NF, NF, FnUtils_HashPrimesHB4, FnUtils_HashPrimesHB3, FnUtils_HashPrimesHB2, NF, NF)(__VA_ARGS__)
 
 
 
@@ -113,7 +153,7 @@ STATIC const float gY_Fancy[] = { GRADIENT_FANCY_VEC_2D_Y };
 
 STATIC INLINE float32v GetGradientDotFancy( int32v hash, float32v fX, float32v fY )
 {
-    int32v index = FS_Convertf32_i32( FS_Converti32_f32( hash & int32v( 0x3FFFFF ) ) * float32v( 1.3333333333333333f ) );
+    int32v index = FS_Convertf32_i32( FS_Converti32_f32( hash & int32v( 0x3FFFFF ) ) * float32v( 1.3333333333333333f ) ) & 0xF;
 
     float32v gX = gX_Fancy[index];
     float32v gY = gY_Fancy[index];
@@ -122,6 +162,39 @@ STATIC INLINE float32v GetGradientDotFancy( int32v hash, float32v fX, float32v f
 }
 
 #define FnUtils_GetGradientDotFancy(h, x, y) GetGradientDotFancy(h, x, y)
+
+
+
+///////////////////////////////////////////////////////////////////////
+///    FnUtils::GetValueCoord
+///////////////////////////////////////////////////////////////////////
+
+STATIC INLINE float32v GetValueCoord2D( int32v seed, int32v fX, int32v fY )
+{
+    int32v hash = seed ^ fX ^ fY;
+    hash *= hash * int32v( 0x27d4eb2d );
+    return FS_Converti32_f32( hash ) * float32v( 1.0f / float(INT_MAX) );
+}
+
+STATIC INLINE float32v GetValueCoord3D( int32v seed, int32v fX, int32v fY, int32v fZ )
+{
+    int32v hash = seed ^ fX ^ fY ^ fZ;
+    hash *= hash * int32v( 0x27d4eb2d );
+    return FS_Converti32_f32( hash ) * float32v( 1.0f / float(INT_MAX) );
+}
+
+STATIC INLINE float32v GetValueCoord4D( int32v seed, int32v fX, int32v fY, int32v fZ, int32v fW )
+{
+    int32v hash = seed ^ fX ^ fY ^ fZ ^ fW;
+    hash *= hash * int32v( 0x27d4eb2d );
+    return FS_Converti32_f32( hash ) * float32v( 1.0f / float(INT_MAX) );
+}
+
+#define FnUtils_GetValueCoord2(h, x, y) GetValueCoord2D(h, x, y)
+#define FnUtils_GetValueCoord3(h, x, y, z) GetValueCoord3D(h, x, y, z)
+#define FnUtils_GetValueCoord4(h, x, y, z, w) GetValueCoord4D(h, x, y, z, w)
+#define FnUtils_GetValueCoord(...) _GET_OVERRIDE(__VA_ARGS__, NF, NF, FnUtils_GetValueCoord4, FnUtils_GetValueCoord3, FnUtils_GetValueCoord2, NF, NF)(__VA_ARGS__)
+
 
 
 #endif //FASTNOISEHLSLUTILS_H
