@@ -38,3 +38,6 @@ add_custom_command(
         ${CMAKE_CURRENT_SOURCE_DIR}/Config.h
         ${CMAKE_CURRENT_SOURCE_DIR}/Libs/The-Forge/Common_3/Application/Config.h
 )
+
+add_executable(TestShaderAlgoInCpp TestShaderAlgoInCpp.cpp)
+target_link_libraries(TestShaderAlgoInCpp required_libs)

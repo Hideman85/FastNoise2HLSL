@@ -12,6 +12,7 @@
 inline void writeBitmap(const char* filename, int width, int height, const std::vector<uint8_t>& pixelData);
 
 constexpr int SIZE = 4096;
+constexpr int NB_COMPUTE_THREAD = 16; // Defined in compute shader
 constexpr int AREA = SIZE * SIZE;
 
 void BiomeCompute::print() {
@@ -26,8 +27,9 @@ void BiomeCompute::print() {
 
 #ifdef WITH_SMID
     std::vector<float> regionData(AREA);
-    auto elevGen = FastNoise::NewFromEncodedNodeTree("BwA="); // Perlin
-    // auto elevGen = FastNoise::NewFromEncodedNodeTree("CQA="); // OpenSimplex2
+//    auto elevGen = FastNoise::NewFromEncodedNodeTree("BwA="); // Perlin
+    auto elevGen = FastNoise::NewFromEncodedNodeTree("CQA="); // OpenSimplex2
+    // auto elevGen = FastNoise::NewFromEncodedNodeTree("IQATAAAAgD4RAAUAAAAAAABAEAAAAABABgAAAACAPgAAAAA/AAAAAAARAAUAAAAAAABAEAAAAABADQACAAAApHD9PyEAJAADAAAACQD//wQAAAAAAD8Aj8L1PgAAAAAAAAAAgD4Aj8L1PgAAAAAAAAAAAD8="); // Complex tree
 
     HiresTimer highresTimer2;
     initHiresTimer(&highresTimer2);
@@ -135,8 +137,8 @@ void BiomeCompute::Compute(Cmd* cmd) {
     initHiresTimer(&highresTimer);
     cmdBindPipeline(cmd, pPipeline);
     cmdBindDescriptorSet(cmd, 0, pDescriptorSet);
-    cmdDispatch(cmd, SIZE, SIZE, 1);
-    // TODO Should probably barrier for the texture
+    cmdDispatch(cmd, (int)(SIZE / NB_COMPUTE_THREAD), (int)(SIZE / NB_COMPUTE_THREAD), 1);
+    // TODO Should probably barrier for the buffers
 };
 
 

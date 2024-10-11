@@ -11,12 +11,17 @@
 #define _ENUM(NAME, ...) enum class NAME : uint { __VA_ARGS__ };
 #define _ENUM_VAL(NAME, VAL) NAME = VAL,
 #define _GET_ENUM_VAL(TYPE, NAME) static_cast<uint>(TYPE::NAME)
-#define Get(X) nodeTreeUniform.X
+#define _GET_ENUM_VAL_NO_CAST(TYPE, NAME) TYPE::NAME
+#define STEPS_POINTER tree.Steps
+#define NB_STEP_POINTER tree.NbSteps
 #define asFloatCpp asfloat
 #else
 #define _ENUM(NAME, ...) __VA_ARGS__
 #define _ENUM_VAL(NAME, VAL) STATIC const uint NAME = VAL;
+#define _GET_ENUM_VAL_NO_CAST(NAME, VAL) _ENUM_VAL(NAME, VAL);
 #define _GET_ENUM_VAL(TYPE, NAME) NAME
+#define STEPS_POINTER Get(Steps)
+#define NB_STEP_POINTER Get(NbSteps)
 #define asFloatCpp
 #endif
 
@@ -88,7 +93,9 @@ STRUCT(Step) {
   DATA(uint, Type, None);
   DATA(StepParameter, Parameters[MAX_STEP_PARAMS], None);
 };
-// #define __USE_UBO__
+#endif
+
+//#define __USE_UBO__
 #ifdef __USE_UBO__
 CBUFFER(NodeTreeUniform, UPDATE_FREQ_NONE, b3, binding=3)
 {
@@ -99,6 +106,7 @@ CBUFFER(NodeTreeUniform, UPDATE_FREQ_NONE, b3, binding=3)
   DATA(Step, Steps[MAX_NB_STEPS], None);
 };
 #else
+#ifndef __cplusplus
 STRUCT(NodeTreeUniform)
 {
   DATA(uint, NbSteps, None);
@@ -107,103 +115,112 @@ STRUCT(NodeTreeUniform)
   DATA(int, Seed, None);
   DATA(Step, Steps[MAX_NB_STEPS], None);
 };
+#endif
 
 NodeTreeUniform tree;
 
-#define Get(X) tree.X
+#define STEPS_POINTER tree.Steps
+#define NB_STEP_POINTER tree.NbSteps
+
+#ifdef __cplusplus
+#define SET_VALUE_INT(add, val) add.intValue = val
+#define SET_VALUE_FLOAT(add, val) add.floatValue = val
+#else
+#define SET_VALUE_INT(add, val) add = asfloat(val)
+#define SET_VALUE_FLOAT(add, val) add = val
+#endif
 
 void GenNoiseSteps() {
     int step = 0;
-    tree.Steps[step].Type = NOISE_OPENSIMPLEX2;
+    tree.Steps[step].Type = _GET_ENUM_VAL_NO_CAST(StepType, NOISE_OPENSIMPLEX2);
 
     step++;
-    tree.Steps[step].Type = BLEND_POW_INT;
-    tree.Steps[step].Parameters[0].Type = PARAM_STEP_RESULT;
-    tree.Steps[step].Parameters[0].Value = asfloat(step - 1);
-    tree.Steps[step].Parameters[1].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[1].Value = asfloat(3);
+    tree.Steps[step].Type = _GET_ENUM_VAL_NO_CAST(StepType, BLEND_POW_INT);
+    tree.Steps[step].Parameters[0].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_STEP_RESULT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[0].Value, step - 1);
+    tree.Steps[step].Parameters[1].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[1].Value, 3);
 
     step++;
-    tree.Steps[step].Type = BLEND_FADE;
-    tree.Steps[step].Parameters[0].Type = PARAM_STEP_RESULT;
-    tree.Steps[step].Parameters[0].Value = asfloat(step - 2);
-    tree.Steps[step].Parameters[1].Type = PARAM_STEP_RESULT;
-    tree.Steps[step].Parameters[1].Value = asfloat(step - 1);
-    tree.Steps[step].Parameters[2].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[2].Value = 0.5f;
+    tree.Steps[step].Type = _GET_ENUM_VAL_NO_CAST(StepType, BLEND_FADE);
+    tree.Steps[step].Parameters[0].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_STEP_RESULT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[0].Value, step - 2);
+    tree.Steps[step].Parameters[1].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_STEP_RESULT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[1].Value, step - 1);
+    tree.Steps[step].Parameters[2].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[2].Value, 0.5f);
 
     step++;
-    tree.Steps[step].Type = FRACTAL_FBM;
-    tree.Steps[step].Parameters[0].Type = PARAM_STEP_RESULT;
-    tree.Steps[step].Parameters[0].Value = asfloat(step - 1);
-    tree.Steps[step].Parameters[1].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[1].Value = 0.48f;
-    tree.Steps[step].Parameters[2].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[2].Value = 0.f;
-    tree.Steps[step].Parameters[3].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[3].Value = asfloat(2);
-    tree.Steps[step].Parameters[4].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[4].Value = 1.98f;
+    tree.Steps[step].Type = _GET_ENUM_VAL_NO_CAST(StepType, FRACTAL_FBM);
+    tree.Steps[step].Parameters[0].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_STEP_RESULT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[0].Value, step - 1);
+    tree.Steps[step].Parameters[1].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[1].Value, 0.48f);
+    tree.Steps[step].Parameters[2].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[2].Value, 0.f);
+    tree.Steps[step].Parameters[3].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[3].Value, 2);
+    tree.Steps[step].Parameters[4].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[4].Value, 1.98f);
 
     step++;
-    tree.Steps[step].Type = FRACTAL_DOMAIN_WARP_FRACTAL_PROGRESSIVE;
-    tree.Steps[step].Parameters[0].Type = PARAM_STEP_RESULT;
-    tree.Steps[step].Parameters[0].Value = asfloat(step - 1);
-    tree.Steps[step].Parameters[1].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[1].Value = 0.25f;
-    tree.Steps[step].Parameters[2].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[2].Value = 2.f;
-    tree.Steps[step].Parameters[3].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[3].Value = asfloat(5);
-    tree.Steps[step].Parameters[4].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[4].Value = 0.5f;
-    tree.Steps[step].Parameters[5].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[5].Value = 0.f;
-    tree.Steps[step].Parameters[6].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[6].Value = 2.f;
+    tree.Steps[step].Type = _GET_ENUM_VAL_NO_CAST(StepType, FRACTAL_DOMAIN_WARP_FRACTAL_PROGRESSIVE);
+    tree.Steps[step].Parameters[0].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_STEP_RESULT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[0].Value, step - 1);
+    tree.Steps[step].Parameters[1].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[1].Value, 0.25f);
+    tree.Steps[step].Parameters[2].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[2].Value, 2.f);
+    tree.Steps[step].Parameters[3].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[3].Value, 5);
+    tree.Steps[step].Parameters[4].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[4].Value, 0.5f);
+    tree.Steps[step].Parameters[5].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[5].Value, 0.f);
+    tree.Steps[step].Parameters[6].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[6].Value, 2.f);
     uint phase1 = step;
 
     step++;
-    tree.Steps[step].Type = NOISE_VALUE;
+    tree.Steps[step].Type = _GET_ENUM_VAL_NO_CAST(StepType, NOISE_VALUE);
 
     step++;
-    tree.Steps[step].Type = FRACTAL_DOMAIN_WARP_FRACTAL_PROGRESSIVE;
-    tree.Steps[step].Parameters[0].Type = PARAM_STEP_RESULT;
-    tree.Steps[step].Parameters[0].Value = asfloat(step - 1);
-    tree.Steps[step].Parameters[1].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[1].Value = 0.25f;
-    tree.Steps[step].Parameters[2].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[2].Value = 2.f;
-    tree.Steps[step].Parameters[3].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[3].Value = asfloat(5);
-    tree.Steps[step].Parameters[4].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[4].Value = 0.5f;
-    tree.Steps[step].Parameters[5].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[5].Value = 0.f;
-    tree.Steps[step].Parameters[6].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[6].Value = 2.f;
+    tree.Steps[step].Type = _GET_ENUM_VAL_NO_CAST(StepType, FRACTAL_DOMAIN_WARP_FRACTAL_PROGRESSIVE);
+    tree.Steps[step].Parameters[0].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_STEP_RESULT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[0].Value, step - 1);
+    tree.Steps[step].Parameters[1].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[1].Value, 0.25f);
+    tree.Steps[step].Parameters[2].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[2].Value, 2.f);
+    tree.Steps[step].Parameters[3].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[3].Value, 5);
+    tree.Steps[step].Parameters[4].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[4].Value, 0.5f);
+    tree.Steps[step].Parameters[5].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[5].Value, 0.f);
+    tree.Steps[step].Parameters[6].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[6].Value, 2.f);
 
     step++;
-    tree.Steps[step].Type = MODIFIER_DOMAIN_SCALE;
-    tree.Steps[step].Parameters[0].Type = PARAM_STEP_RESULT;
-    tree.Steps[step].Parameters[0].Value = asfloat(step - 1);
-    tree.Steps[step].Parameters[1].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[1].Value = 0.25f;
+    tree.Steps[step].Type = _GET_ENUM_VAL_NO_CAST(StepType, MODIFIER_DOMAIN_SCALE);
+    tree.Steps[step].Parameters[0].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_STEP_RESULT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[0].Value, step - 1);
+    tree.Steps[step].Parameters[1].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[1].Value, 0.25f);
 
     step++;
-    tree.Steps[step].Type = BLEND_FADE;
-    tree.Steps[step].Parameters[0].Type = PARAM_STEP_RESULT;
-    tree.Steps[step].Parameters[0].Value = asfloat(step - 1);
-    tree.Steps[step].Parameters[1].Type = PARAM_STEP_RESULT;
-    tree.Steps[step].Parameters[1].Value = asfloat(phase1);
-    tree.Steps[step].Parameters[2].Type = PARAM_CONSTANT;
-    tree.Steps[step].Parameters[2].Value = 0.5f;
+    tree.Steps[step].Type = _GET_ENUM_VAL_NO_CAST(StepType, BLEND_FADE);
+    tree.Steps[step].Parameters[0].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_STEP_RESULT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[0].Value, step - 1);
+    tree.Steps[step].Parameters[1].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_STEP_RESULT);
+    SET_VALUE_INT(tree.Steps[step].Parameters[1].Value, phase1);
+    tree.Steps[step].Parameters[2].Type = _GET_ENUM_VAL_NO_CAST(ParamType, PARAM_CONSTANT);
+    SET_VALUE_FLOAT(tree.Steps[step].Parameters[2].Value, 0.5f);
 
     tree.NbSteps = step + 1;
     tree.Frequency = 0.0004f;
     tree.Seed = 1337;
 }
-#endif
 #endif
 
 // Define this global for c++

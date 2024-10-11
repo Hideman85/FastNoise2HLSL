@@ -1,29 +1,32 @@
 RES(RWBuffer(float), ElevationBuffer, UPDATE_FREQ_NONE, b0, binding=0);
 
-#define SEED 1337
+#define __TOTAL_REGION_SIZE__ 4096
 #define THE_FORGE_SHADING_LANGUAGE
 
 #include "../../FastNoise2HLSL/FastNoiseHLSL.h"
 
-#define __TOTAL_REGION_SIZE__ 4096
-
-// Main compute shader function
 NUM_THREADS(16, 16, 1)
 void CS_MAIN(SV_GroupThreadID(uint3) inGroupId, SV_DispatchThreadID(uint3) DTid)
 {
     INIT_MAIN;
+#ifndef __USE_UBO__
+    GenNoiseSteps();
+#endif
 
-    if (DTid.x < __TOTAL_REGION_SIZE__ && DTid.y < __TOTAL_REGION_SIZE__)
-    {
-        uint idx = DTid.y * __TOTAL_REGION_SIZE__ + DTid.x;
-        float x = float(DTid.x), y = float(DTid.y);
-
-        float freq = 0.004f;
-//        float value = OpenSimplex2(x * freq, y * freq);
-        float value = Perlin(x * freq, y * freq);
-
-        Get(ElevationBuffer)[idx] = value;
+    if (DTid.x >= __TOTAL_REGION_SIZE__ || DTid.y >= __TOTAL_REGION_SIZE__) {
+        RETURN();
     }
+
+    uint idx = DTid.y * __TOTAL_REGION_SIZE__ + DTid.x;
+    float x = float(DTid.x), y = float(DTid.y);
+
+    int seed = 1337;
+    float freq = 0.004f, value;
+
+    value = OpenSimplex2Noise(seed, x * freq, y * freq); // Working
+    // value = NodeTreeProcessing(seed, x * freq, y * freq); // Crashing
+
+    Get(ElevationBuffer)[idx] = value;
 
     RETURN();
 }
