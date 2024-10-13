@@ -18,7 +18,7 @@
 #else
 #define _ENUM(NAME, ...) __VA_ARGS__
 #define _ENUM_VAL(NAME, VAL) STATIC const uint NAME = VAL;
-#define _GET_ENUM_VAL_NO_CAST(NAME, VAL) _ENUM_VAL(NAME, VAL);
+#define _GET_ENUM_VAL_NO_CAST(NAME, VAL) VAL;
 #define _GET_ENUM_VAL(TYPE, NAME) NAME
 #define STEPS_POINTER Get(Steps)
 #define NB_STEP_POINTER Get(NbSteps)
@@ -78,8 +78,8 @@ typedef struct alignas(16) Step {
   StepParameter Parameters[MAX_STEP_PARAMS];
 } Step;
 typedef struct alignas(16) NodeTreeUniform {
-  uint NbSteps;
-  uint BufferIdx;
+  int NbSteps;
+  int BufferIdx;
   float Frequency = 0.0004f;
   int Seed = 1337;
   Step Steps[MAX_NB_STEPS];
@@ -99,8 +99,8 @@ STRUCT(Step) {
 #ifdef __USE_UBO__
 CBUFFER(NodeTreeUniform, UPDATE_FREQ_NONE, b3, binding=3)
 {
-  DATA(uint, NbSteps, None);
-  DATA(uint, BufferIdx, None);
+  DATA(int, NbSteps, None);
+  DATA(int, BufferIdx, None);
   DATA(float, Frequency, None);
   DATA(int, Seed, None);
   DATA(Step, Steps[MAX_NB_STEPS], None);
@@ -109,8 +109,8 @@ CBUFFER(NodeTreeUniform, UPDATE_FREQ_NONE, b3, binding=3)
 #ifndef __cplusplus
 STRUCT(NodeTreeUniform)
 {
-  DATA(uint, NbSteps, None);
-  DATA(uint, BufferIdx, None);
+  DATA(int, NbSteps, None);
+  DATA(int, BufferIdx, None);
   DATA(float, Frequency, None);
   DATA(int, Seed, None);
   DATA(Step, Steps[MAX_NB_STEPS], None);

@@ -63,11 +63,11 @@ STATIC INLINE bool _applyBlend##DIM(uint TYPE) {\
             return true;\
         }\
         case _GET_ENUM_VAL(StepType, BLEND_POW_FLOAT): {\
-            returnValue = pow(_A, _B);\
+            returnValue = _A < 0 ? -pow(-_A, _B) : pow(_A, _B); /* POW in shader is null for negative */\
             return true;\
         }\
         case _GET_ENUM_VAL(StepType, BLEND_POW_INT): {\
-            returnValue = pow(_A, asint(_B));\
+            returnValue = _A < 0 ? -pow(-_A, asint(_B)) : pow(_A, asint(_B)); /* POW in shader is null for negative */\
             return true;\
         }\
         case _GET_ENUM_VAL(StepType, BLEND_MIN): {\
@@ -115,12 +115,11 @@ STATIC INLINE bool _applyNoise##DIM(uint TYPE) {\
 }
 
 #define _MAKE_STEP_HELPER(DIM) \
-STATIC INLINE bool _getStepResult##DIM(uint stepId) {\
-    uint stepType = asuint(STEPS_POINTER[stepId].Type);\
-    if (stepType >= _GET_ENUM_VAL(StepType, FRACTAL_DOMAIN_WARP_FRACTAL_PROGRESSIVE)) return true; /* Already treated */\
-    if (stepType >= _GET_ENUM_VAL(StepType, FRACTAL_FBM)) return _applyFractal##DIM(stepType);\
-    if (stepType >= _GET_ENUM_VAL(StepType, BLEND_ADD)) return _applyBlend##DIM(stepType);\
-    if (stepType >= _GET_ENUM_VAL(StepType, NOISE_VALUE)) return _applyNoise##DIM(stepType);\
+STATIC INLINE bool _getStepResult##DIM(uint TYPE) {\
+    if (TYPE >= _GET_ENUM_VAL(StepType, FRACTAL_DOMAIN_WARP_FRACTAL_PROGRESSIVE)) return true; /* Already treated */\
+    if (TYPE >= _GET_ENUM_VAL(StepType, FRACTAL_FBM)) return _applyFractal##DIM(TYPE);\
+    if (TYPE >= _GET_ENUM_VAL(StepType, BLEND_ADD)) return _applyBlend##DIM(TYPE);\
+    if (TYPE >= _GET_ENUM_VAL(StepType, NOISE_VALUE)) return _applyNoise##DIM(TYPE);\
     return true;\
 }
 
@@ -129,7 +128,7 @@ STATIC float _treeProcessing##DIM(int seed, _F##DIM) {\
     _SET##DIM \
 \
     /* Clean state */\
-    for (uint i = 0; i < TOTAL_PARAMS; i++) PARAM_STACK[i] = FLOAT_MIN;\
+    for (int i = 0; i < TOTAL_PARAMS; i++) PARAM_STACK[i] = FLOAT_MIN;\
     step_stack_idx = 0;\
     param_stack_idx = 0;\
 \
@@ -137,7 +136,7 @@ STATIC float _treeProcessing##DIM(int seed, _F##DIM) {\
     currentStep.returnIdx = 0;\
     param_stack_idx++;\
 \
-    uint stepId, nbParams;\
+    uint stepId; int nbParams;\
     /* When we finish a function, we come back to a function that is already stacked, then we flag to decount nbParams */\
     bool hasBeenStacked = false;\
 \
@@ -154,12 +153,12 @@ STATIC float _treeProcessing##DIM(int seed, _F##DIM) {\
         int unCompletedParam = -1;\
         for (\
             nbParams = 0;\
-            nbParams < MAX_STEP_PARAMS && asuint(STEPS_POINTER[stepId].Parameters[nbParams].Type) > _GET_ENUM_VAL(ParamType, PARAM_UNKNOWN);\
+            nbParams < MAX_STEP_PARAMS && STEPS_POINTER[stepId].Parameters[nbParams].Type > _GET_ENUM_VAL(ParamType, PARAM_UNKNOWN);\
             ++nbParams\
         ) {\
-            if (asuint(STEPS_POINTER[stepId].Parameters[nbParams].Type) == _GET_ENUM_VAL(ParamType, PARAM_STEP_RESULT)) {\
+            if (STEPS_POINTER[stepId].Parameters[nbParams].Type == _GET_ENUM_VAL(ParamType, PARAM_STEP_RESULT)) {\
                 if (unCompletedParam <= 0 && PARAM_STACK[param_stack_idx + nbParams] == FLOAT_MIN) {\
-                    unCompletedParam = int(nbParams);\
+                    unCompletedParam = nbParams;\
                 }\
             } else {\
                 PARAM_STACK[param_stack_idx + nbParams] = asFloatCpp(STEPS_POINTER[stepId].Parameters[nbParams].Value);\
@@ -167,9 +166,9 @@ STATIC float _treeProcessing##DIM(int seed, _F##DIM) {\
         }\
 \
         if (unCompletedParam == -1) { /* Phase 2: If all params completed, unstack and compute */\
-            uint stepType = asuint(STEPS_POINTER[stepId].Type);\
+            uint stepType = STEPS_POINTER[stepId].Type;\
             bool isPosModifier = stepType >= _GET_ENUM_VAL(StepType, FRACTAL_DOMAIN_WARP_FRACTAL_PROGRESSIVE);\
-            bool done = isPosModifier /* already treated */ || _getStepResult2D(stepId);\
+            bool done = isPosModifier /* already treated */ || _getStepResult##DIM(stepType);\
             if (isPosModifier) { /* Dont forget to unstack */\
                 unStackPos(param_stack_idx + nbParams);\
                 returnValue = PARAM_STACK[param_stack_idx];\
@@ -177,32 +176,32 @@ STATIC float _treeProcessing##DIM(int seed, _F##DIM) {\
 \
             /* If this is done unstack */\
             if (done) {\
-                for (uint i = 0; i < currentStep.nbStackedValues; i++) PARAM_STACK[param_stack_idx + i] = FLOAT_MIN;\
+                for (int i = 0; i < currentStep.nbStackedValues; i++) PARAM_STACK[param_stack_idx + i] = FLOAT_MIN;\
 \
                 /* Reset data */\
                 currentStep.stepId = currentStep.nbStackedValues = currentStep.returnIdx = 0;\
 \
                 step_stack_idx--;\
                 /* Our break condition */\
-                if (step_stack_idx == uint(-1)) break;\
+                if (step_stack_idx == -1) break;\
                 hasBeenStacked = true;\
             }\
         } else { /* Phase 3: If still need some dynamic params, look for it, stack current state and "recurse" */\
             if (\
-                asuint(STEPS_POINTER[stepId].Type) >= _GET_ENUM_VAL(StepType, FRACTAL_DOMAIN_WARP_FRACTAL_PROGRESSIVE)\
+                STEPS_POINTER[stepId].Type >= _GET_ENUM_VAL(StepType, FRACTAL_DOMAIN_WARP_FRACTAL_PROGRESSIVE)\
                 && unCompletedParam == 0\
             ) { /* Phase 3.1: If this is a position transform and the last param to compute is source, then transform */\
                 stackPos(param_stack_idx + nbParams);\
                 nbParams += 4;\
-                _applyPositionModifier##DIM(asuint(STEPS_POINTER[stepId].Type));\
+                _applyPositionModifier##DIM(STEPS_POINTER[stepId].Type);\
             }\
             /* Stack current step */\
             if (currentStep.nbStackedValues == 0) currentStep.nbStackedValues = nbParams;\
-            uint nbValues = currentStep.nbStackedValues;\
+            int nbValues = currentStep.nbStackedValues;\
             /* Next step */\
             step_stack_idx++;\
             currentStep.stepId = asuint(STEPS_POINTER[stepId].Parameters[unCompletedParam].Value);\
-            currentStep.returnIdx = param_stack_idx + uint(unCompletedParam);\
+            currentStep.returnIdx = param_stack_idx + unCompletedParam;\
             param_stack_idx += nbValues;\
         }\
     }\

@@ -9,9 +9,9 @@ NUM_THREADS(16, 16, 1)
 void CS_MAIN(SV_GroupThreadID(uint3) inGroupId, SV_DispatchThreadID(uint3) DTid)
 {
     INIT_MAIN;
-#ifndef __USE_UBO__
+
     GenNoiseSteps();
-#endif
+    tree.NbSteps = 2;
 
     if (DTid.x >= __TOTAL_REGION_SIZE__ || DTid.y >= __TOTAL_REGION_SIZE__) {
         RETURN();
@@ -23,8 +23,8 @@ void CS_MAIN(SV_GroupThreadID(uint3) inGroupId, SV_DispatchThreadID(uint3) DTid)
     int seed = 1337;
     float freq = 0.004f, value;
 
-    value = OpenSimplex2Noise(seed, x * freq, y * freq); // Working
-    // value = NodeTreeProcessing(seed, x * freq, y * freq); // Crashing
+    // value = OpenSimplex2Noise(seed, x * freq, y * freq); // Working
+    value = NodeTreeProcessing(seed, x * freq, y * freq); // Crashing
 
     Get(ElevationBuffer)[idx] = value;
 

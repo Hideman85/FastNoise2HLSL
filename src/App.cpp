@@ -161,7 +161,7 @@ public:
         pBiomeCompute->UpdateBuffers();
         Compute(pBiomeCompute);
         pBiomeCompute->print();
-        // I just needed the compute phase the rest I dont mid so lets quite in a proper way...
+        // I just needed the compute phase the rest I dont mind so lets quit in a proper way...
         int a = 1337 / 0;
     }
 
@@ -201,6 +201,8 @@ public:
         queueSubmit(pComputeQueue, &submitDesc);
 
         prevComputeSemaphore = computeElem.pSemaphore;
+
+        waitForFences(pCompute, 1, &computeElem.pFence);
     }
 
     const char *GetName() override { return "Compute"; }

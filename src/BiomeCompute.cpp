@@ -5,6 +5,8 @@
 
 #include "BiomeCompute.h"
 
+#include <iostream>
+
 #include "FastNoise/FastNoise.h"
 
 #define WITH_SMID
@@ -37,6 +39,8 @@ void BiomeCompute::print() {
     elevGen->GenUniformGrid2D(regionData.data(), 0, 0, SIZE, SIZE, 0.004f, 1337);
 
     LOGF(LogLevel::eINFO, "SIMD took : %f ms", getHiresTimerUSec(&highresTimer2, true) / 1000.0f);
+
+    int diff = 0;
 #endif
 
     // #pragma omp parallel for
@@ -47,6 +51,7 @@ void BiomeCompute::print() {
             computeData[pxOffset] = computeData[pxOffset + 1] = computeData[pxOffset + 2] = 128 + 127 * data[idx];
 #ifdef WITH_SMID
             expectedData[pxOffset] = expectedData[pxOffset + 1] = expectedData[pxOffset + 2] = 128 + 127 * regionData[idx];
+            if (abs(regionData[idx] - data[idx]) > 0.0000001f) diff++;
 #endif
         }
     }
@@ -54,6 +59,7 @@ void BiomeCompute::print() {
     writeBitmap("test_comp.bmp", SIZE, SIZE, computeData);
 #ifdef WITH_SMID
     writeBitmap("test_simd.bmp", SIZE, SIZE, expectedData);
+    std::cout << "diff: " << (diff * 100.f) / (SIZE * SIZE) << std::endl;
 #endif
 }
 
@@ -135,10 +141,17 @@ void BiomeCompute::UpdateBuffers() {
 void BiomeCompute::Compute(Cmd* cmd) {
     // Start timer
     initHiresTimer(&highresTimer);
+
+    BufferBarrier barriers[] = {
+        {pComputeBuffer, RESOURCE_STATE_UNORDERED_ACCESS, RESOURCE_STATE_UNORDERED_ACCESS }
+    };
+    cmdResourceBarrier(cmd, 1, barriers, 0, nullptr, 0, nullptr);
+
     cmdBindPipeline(cmd, pPipeline);
     cmdBindDescriptorSet(cmd, 0, pDescriptorSet);
     cmdDispatch(cmd, (int)(SIZE / NB_COMPUTE_THREAD), (int)(SIZE / NB_COMPUTE_THREAD), 1);
-    // TODO Should probably barrier for the buffers
+
+    cmdResourceBarrier(cmd, 1, barriers, 0, nullptr, 0, nullptr);
 };
 
 
